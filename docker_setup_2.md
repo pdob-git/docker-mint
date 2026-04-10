@@ -1,36 +1,31 @@
-Great — I’ll give you a **safe, minimal setup for Linux Mint (Cinnamon)** that won’t mess your system 👍
-(no GNOME, no junk, no surprises)
+# Safe Docker Setup for Linux Mint (Cinnamon)
+
+This guide provides a **safe, minimal setup for Linux Mint (Cinnamon)** that won't mess with your system. No GNOME, no junk, no surprises. Perfect for OpenClaw, agents, and development work.
 
 ---
 
-# 🟢 OPTION 1 (RECOMMENDED): Docker Engine + Portainer (GUI)
+## 🟢 Recommended Setup: Docker Engine + Portainer (GUI)
 
-👉 This is the **best setup for your requirements**:
+This is the **best setup for your requirements**:
+- No VM
+- No GNOME dependencies
+- No system breakage
+- Works perfectly for OpenClaw / agents
 
-* No VM
-* No GNOME dependencies
-* No system breakage
-* Works perfectly for OpenClaw / agents
-
----
-
-## 🔧 Step 1 — Install Docker Engine (clean way)
+### 🔧 Step 1: Install Docker Engine (Clean Way)
 
 Remove old stuff (safe):
-
 ```bash
 sudo apt remove docker docker-engine docker.io containerd runc
 ```
 
 Install dependencies:
-
 ```bash
 sudo apt update
 sudo apt install ca-certificates curl gnupg
 ```
 
 Add Docker official repo (Ubuntu-based = Mint compatible):
-
 ```bash
 sudo install -m 0755 -d /etc/apt/keyrings
 
@@ -44,33 +39,27 @@ sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 ```
 
 Install Docker:
-
 ```bash
 sudo apt update
 sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 ```
 
----
-
-## 🔐 Step 2 — Run Docker without sudo
+### 🔐 Step 2: Run Docker Without Sudo
 
 ```bash
 sudo usermod -aG docker $USER
 ```
 
-👉 Then **logout/login** (important)
+Then **logout/login** (important).
 
 Test:
-
 ```bash
 docker run hello-world
 ```
 
----
+### 🌐 Step 3: Install Portainer (Docker GUI)
 
-## 🌐 Step 3 — Install Portainer (Docker GUI)
-
-This replaces Docker Desktop UI (lighter & better)
+This replaces Docker Desktop UI (lighter & better).
 
 ```bash
 docker volume create portainer_data
@@ -84,90 +73,26 @@ docker run -d \
   portainer/portainer-ce:latest
 ```
 
-Open:
-👉 [http://127.0.0.1:9000](http://127.0.0.1:9000)
+Open: [http://127.0.0.1:9000](http://127.0.0.1:9000)
+
+### ✅ What You Get
+- CLI → `docker`
+- GUI → Portainer
+- No VM
+- No GNOME
+- Fully local, safe
 
 ---
 
-## ✅ What you get
+## 🧱 Bulletproof Docker Setup (Practical + Safe)
 
-* CLI → `docker`
-* GUI → Portainer
-* No VM
-* No GNOME
-* Fully local, safe
+Current setup: Docker Engine + `docker` group (daemon runs as root, you run as user with root-equivalent access).
 
----
+Strategy: 4 layers of protection without jumping to rootless mode yet.
 
-# 🧠 My honest advice (based on your goals)
+### 🧩 Layer 1: Isolate Your Containers (Most Important)
 
-👉 **DO NOT use Docker Desktop**
-
-Use:
-
-✅ Docker Engine
-✅ Portainer (optional GUI)
-❌ No VM
-❌ No GNOME
-❌ No risk
-
----
-
-# 🚀 If you want next step
-
-I can help you set up:
-
-* OpenClaw safely in Docker
-* isolated containers (no system risk)
-* volumes so you **never lose data**
-* optional GPU / local models
-
-Just tell me 👍
-
-[1]: https://docs.docker.com/desktop/setup/install/linux/ubuntu/?utm_source=chatgpt.com "Ubuntu | Docker Docs"
-[2]: https://docs.docker.com/desktop/setup/install/linux/?utm_source=chatgpt.com "Linux | Docker Docs"
-
-
----
-
-Alright — now we build you a **“bulletproof Docker setup”** that matches your goal:
-
-> 👉 **DO NOT TOUCH MY DATA OR BREAK CURRENT SYSTEM**
-
-I’ll keep it **practical + safe + realistic** (not overkill like full rootless unless you want it later).
-
----
-
-# 🧱 1. Understand your current setup (important)
-
-Right now you have:
-
-👉 Docker Engine + `docker` group
-
-This means:
-
-* Docker daemon runs as **root**
-* You run `docker` as user
-* You have **root-equivalent access** ⚠️
-
-This is normal, but:
-
-👉 Docker daemon **requires root unless using rootless mode** ([Docker Documentation][1])
-
----
-
-# 🔐 2. Your “bulletproof” strategy (simple but strong)
-
-We’ll NOT jump to rootless yet.
-
-Instead we do **4 layers of protection**:
-
----
-
-## 🧩 Layer 1 — Isolate your containers (MOST IMPORTANT)
-
-👉 Always run containers like this:
-
+Always run containers like this:
 ```bash
 docker run -d \
   --name myapp \
@@ -179,865 +104,141 @@ docker run -d \
   myimage
 ```
 
-### Why this matters:
+Why:
+- `--read-only` → container cannot modify filesystem
+- `--tmpfs` → temporary safe writable space
+- `no-new-privileges` → blocks privilege escalation
 
-* `--read-only` → container **cannot modify filesystem**
-* `--tmpfs` → temporary safe writable space
-* `no-new-privileges` → blocks privilege escalation
+### 📦 Layer 2: Protect Your Data (Critical)
 
----
-
-## 📦 Layer 2 — Protect your data (CRITICAL)
-
-👉 NEVER store data inside containers
-
-Use volumes:
-
+Never store data inside containers. Use volumes:
 ```bash
 docker volume create mydata
-```
 
-```bash
 docker run -d \
   -v mydata:/app/data \
   myimage
 ```
 
-### Why:
+Why: Containers can be deleted → data survives; prevents accidental system overwrite.
 
-* Containers can be deleted → data survives
-* Prevents accidental system overwrite
+### 🚫 Layer 3: Avoid Dangerous Flags
 
----
-
-## 🚫 Layer 3 — Avoid dangerous flags
-
-### ❌ NEVER use:
-
+Never use:
 ```bash
 --privileged
 -v /:/host
 --cap-add=ALL
 ```
 
-👉 These basically **break isolation**
+These break isolation.
 
----
+### 👤 Layer 4: Run Apps as Non-Root Inside Container
 
-## 👤 Layer 4 — Run apps as non-root inside container
-
-Even if Docker is rootful:
-
-👉 Your app doesn’t need to be root
-
-Example:
-
+Even in rootful Docker:
 ```bash
 docker run -u 1000:1000 myimage
 ```
 
-Why:
-
-* Even if container is compromised → limited damage
-* Docker already limits capabilities by default ([Docker Documentation][1])
+Why: Limits damage if compromised; Docker limits capabilities by default.
 
 ---
 
-# 🔒 3. Optional HARD MODE (true rootless Docker)
+## 🔒 Optional: Rootless Docker (Maximum Security)
 
-If you want maximum security:
+Rootless Docker runs daemon + containers as user (no root at all). Eliminates container escape attacks.
 
-👉 Rootless Docker runs daemon + containers as user
-(no root at all)
+### Prerequisites
+- Docker installed
+- Install required package: `sudo apt install uidmap`
 
-This eliminates a whole class of attacks:
-
-👉 container escape ≠ root on host ([articles.usulnet.com][2])
-
----
-
-## Install rootless (optional)
-
-```bash
-sudo apt install uidmap
-dockerd-rootless-setuptool.sh install
-```
-
-Then:
-
-```bash
-systemctl --user start docker
-```
-
----
-
-### ⚠️ Trade-offs (important)
-
-* Slight networking overhead
-* Some containers break
-* No low ports (<1024)
-* More complex
-
-👉 Rootless runs everything in user namespace ([Docker Documentation][3])
-
----
-
-# 🧠 4. What I recommend FOR YOU
-
-Based on your use case (learning OpenClaw, local dev):
-
-### ✅ Best setup:
-
-* Docker Engine (rootful)
-* docker group
-* Portainer (optional)
-* Safe flags (above)
-
-### ❌ Skip for now:
-
-* Docker Desktop
-* Full rootless (unless you want extra challenge)
-
----
-
-# 🚀 5. Next level (VERY useful for you)
-
-If you want real safety:
-
-👉 Run risky stuff like OpenClaw in:
-
-### Option A (easy)
-
-* separate Docker network
-* limited ports
-
-### Option B (better)
-
-* separate Linux user
-* or even VM later
-
----
-
-# 🧾 Final truth (important mindset)
-
-* Docker is **not a VM**
-* It shares kernel → security depends on YOU
-* Rootless improves safety, but:
-
-  * good practices matter more
-
----
-
-# 👉 If you want next step
-
-I can build you:
-
-✅ **OpenClaw Docker setup (safe, isolated, persistent)**
-✅ with volumes + network + zero host risk
-✅ ready-to-run compose file
-
-Just say:
-👉 *“setup OpenClaw safely”*
-
-[1]: https://docs.docker.com/engine/security/?utm_source=chatgpt.com "Security | Docker Docs"
-[2]: https://articles.usulnet.com/articles/docker-rootless-mode.html?utm_source=chatgpt.com "Running Docker in Rootless Mode: Complete Security Guide | usulnet"
-[3]: https://docs.docker.com/engine/security/rootless/?utm_source=chatgpt.com "Rootless mode | Docker Docs"
-
----
-
-Great question — this is exactly where many people get stuck 👍
-
----
-
-# 📍 Where is `dockerd-rootless-setuptool.sh`?
-
-👉 It is **NOT something you download manually**
-👉 It is installed **with Docker packages**
-
----
-
-## ✅ Most common location
-
-After installing Docker properly, you should find it here:
-
-```bash
-/usr/bin/dockerd-rootless-setuptool.sh
-```
-
-👉 Check:
-
-```bash
-which dockerd-rootless-setuptool.sh
-```
-
-or:
-
-```bash
-ls /usr/bin/dockerd-rootless-setuptool.sh
-```
-
-✔ If it exists → you're ready
-
----
-
-# ❗ If you DON'T have it (very common)
-
-This means:
-
-👉 You are missing package:
-
-```bash
-docker-ce-rootless-extras
-```
-
-Install it:
-
-```bash
-sudo apt install docker-ce-rootless-extras
-```
-
-👉 This package **contains the script** ([Docker Documentation][1])
-
----
-
-# 🔄 Alternative (if package not available)
-
-You can install rootless Docker using official script:
-
-```bash
-curl -fsSL https://get.docker.com/rootless | sh
-```
-
-👉 This installs everything into:
-
-```bash
-~/bin/
-```
-
-including:
-
-* `dockerd-rootless-setuptool.sh`
-* `dockerd-rootless.sh`
-
-([Docker Documentation][1])
-
----
-
-# 🧠 Important distinction (very important)
-
-There are **two different things**:
-
-### 1️⃣ This script:
-
-```bash
-dockerd-rootless-setuptool.sh install
-```
-
-👉 configures rootless Docker
-👉 assumes Docker binaries already exist
-
----
-
-### 2️⃣ Full installer:
-
-```bash
-curl ... rootless | sh
-```
-
-👉 installs + configures everything
-
----
-
-# ⚠️ Common mistake
-
-If you see:
-
-```bash
-command not found
-```
-
-👉 99% means:
-
-* package not installed
-* or PATH not updated
-
----
-
-# 🧪 Quick checklist (do this)
-
-```bash
-docker --version
-```
-
-```bash
-which dockerd-rootless-setuptool.sh
-```
-
-If missing:
-
-```bash
-sudo apt install docker-ce-rootless-extras
-```
-
----
-
-# 🧭 What I recommend for YOU
-
-Since you're careful about system safety:
-
-👉 First get this working:
-
-* Docker Engine ✔
-* safe usage ✔
-
-Then optionally:
-
-* rootless (advanced step)
-
----
-
-# 🚀 If you want next
-
-I can guide you **step-by-step for Linux Mint specifically**:
-
-* verify prerequisites (`uidmap`, subuids)
-* install rootless properly
-* avoid common Mint issues (there are a few)
-
-Just say:
-👉 *“setup rootless step by step”*
-
-[1]: https://docs.docker.com/engine/security/rootless/?utm_source=chatgpt.com "Rootless mode | Docker Docs"
-
----
-
-Perfect — let’s do this **clean, safe, and Mint-friendly**.
-I’ll guide you step-by-step and explain *why each step exists* so you don’t break anything.
-
----
-
-# 🧱 STEP 0 — What we are doing
-
-👉 We will switch from:
-
-* ❌ root Docker daemon
-  to:
-* ✅ **rootless Docker (fully non-root)**
-
-👉 In rootless mode:
-
-* daemon runs as your user
-* containers run without root
-* uses **user namespaces + subuids** ([Docker Documentation][1])
-
----
-
-# 🔍 STEP 1 — Check prerequisites
-
-### 1. Check Docker is installed
-
-```bash
-docker --version
-```
-
----
-
-### 2. Install required package
-
-```bash
-sudo apt install uidmap
-```
-
-👉 This provides:
-
-* `newuidmap`
-* `newgidmap`
-  (required for rootless) ([Docker Documentation][1])
-
----
-
-# 🔍 STEP 2 — Check UID mapping (VERY IMPORTANT)
-
+### Check UID Mapping
 Run:
-
 ```bash
 grep ^$(whoami): /etc/subuid
 grep ^$(whoami): /etc/subgid
 ```
 
----
+Should show: `youruser:100000:65536`
 
-## ✅ Correct output should look like:
-
-```
-youruser:100000:65536
-```
-
-👉 You need **at least 65,536 IDs** ([Docker Documentation][1])
-
----
-
-## ❌ If empty → FIX it
-
+If empty, fix:
 ```bash
 sudo usermod --add-subuids 100000-165535 $USER
 sudo usermod --add-subgids 100000-165535 $USER
 ```
+Then logout/login.
 
-Then **logout + login**
-
----
-
-# 🧹 STEP 3 — Stop root Docker (important!)
-
-👉 You don’t want two daemons fighting
-
+### Installation Steps
+Stop root Docker:
 ```bash
 sudo systemctl disable --now docker.service docker.socket
 sudo rm /var/run/docker.sock
 ```
 
-👉 This avoids conflicts ([Docker Documentation][1])
-
----
-
-# 📦 STEP 4 — Install rootless extras (if missing)
-
+Install rootless extras:
 ```bash
 sudo apt install docker-ce-rootless-extras
 ```
 
-👉 This installs:
-
-* `dockerd-rootless-setuptool.sh`
-
----
-
-# 🚀 STEP 5 — Run setup (MAIN STEP)
-
-⚠️ Run as **normal user (NOT sudo)**
-
+Run setup (as normal user):
 ```bash
 dockerd-rootless-setuptool.sh install
 ```
 
----
-
-## Expected output (important)
-
-You should see:
-
-* systemd user service created
-* context switched to `rootless`
-* instructions like:
-
+Start rootless Docker:
 ```bash
 systemctl --user start docker
-```
-
----
-
-# ▶️ STEP 6 — Start rootless Docker
-
-```bash
-systemctl --user start docker
-```
-
-Enable autostart:
-
-```bash
 sudo loginctl enable-linger $USER
 ```
 
-👉 This allows Docker to run without login session ([Docker Documentation][1])
-
----
-
-# 🔧 STEP 7 — Set environment variables
-
-Add to `~/.bashrc`:
-
+### Configuration for Zsh (Oh My Zsh)
+Add to `~/.zshrc`:
 ```bash
 export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock
 ```
 
 Reload:
-
-```bash
-source ~/.bashrc
-```
-
----
-
-# 🧪 STEP 8 — Test
-
-```bash
-docker info
-```
-
-Look for:
-
-```
-Security Options:
- rootless
-```
-
----
-
-Then:
-
-```bash
-docker run hello-world
-```
-
----
-
-# ⚠️ IMPORTANT LIMITATIONS (don’t skip)
-
-Rootless Docker has trade-offs:
-
-### 🚫 Limitations:
-
-* Ports <1024 won’t work (e.g. 80, 443)
-* Slightly slower networking
-* Some images may fail
-
-### 📦 Storage note:
-
-* Data is now in:
-
-```bash
-~/.local/share/docker
-```
-
-NOT `/var/lib/docker`
-
----
-
-# 🧠 What just happened (important understanding)
-
-Rootless works by:
-
-* mapping container root → your user
-* using `/etc/subuid` ranges
-* isolating via user namespaces ([rootlesscontaine.rs][2])
-
-👉 So even if container is “root”:
-➡️ it is **NOT root on your system**
-
----
-
-# 🔥 Common problems (quick fixes)
-
-### ❌ Error: `command not found`
-
-→ install:
-
-```bash
-sudo apt install docker-ce-rootless-extras
-```
-
----
-
-### ❌ Error: `newuidmap not found`
-
-```bash
-sudo apt install uidmap
-```
-
----
-
-### ❌ Error: permission denied / namespaces
-
-```bash
-cat /proc/sys/kernel/unprivileged_userns_clone
-```
-
-If `0`:
-
-```bash
-sudo sysctl -w kernel.unprivileged_userns_clone=1
-```
-
----
-
-# 🧭 My recommendation for YOU
-
-👉 Now you have **maximum safety**
-
-BUT:
-
-For OpenClaw / AI stacks:
-
-* start simple (rootful + safe flags)
-* then test rootless
-
----
-
-# 🚀 Next step (I strongly recommend)
-
-Now I can help you:
-
-👉 Run OpenClaw in:
-
-* rootless Docker
-* isolated volumes
-* safe networking
-
-Just say:
-👉 **“deploy OpenClaw rootless”**
-
-[1]: https://docs.docker.com/engine/security/rootless/?utm_source=chatgpt.com "Rootless mode | Docker Docs"
-[2]: https://rootlesscontaine.rs/getting-started/common/subuid/?utm_source=chatgpt.com "/etc/subuid and /etc/subgid | Rootless Containers"
-
----
-
-Yes — **you should NOT use `.bashrc` if you're using Oh My Zsh**.
-You need to update the **Zsh equivalents** instead 👍
-
----
-
-# 🧠 Correct place for Docker rootless config (Zsh)
-
-Instead of:
-
-```bash
-~/.bashrc
-```
-
-👉 Use:
-
-```bash
-~/.zshrc
-```
-
----
-
-## ✅ What you should do
-
-Open your config:
-
-```bash
-nano ~/.zshrc
-```
-
-Add this line:
-
-```bash
-export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock
-```
-
-Then reload:
-
 ```bash
 source ~/.zshrc
 ```
 
----
-
-# 🧠 Why this matters
-
-* `.bashrc` → only used by Bash
-* `.zshrc` → used by Zsh / Oh My Zsh
-* If you put it in `.bashrc`, Zsh will **ignore it completely**
-
-👉 That’s why Docker may “not work” after setup
-
----
-
-# ⚠️ Important nuance (advanced but useful)
-
-There are **3 possible Zsh files**:
-
-| File        | When it runs            | Use case          |
-| ----------- | ----------------------- | ----------------- |
-| `.zshrc`    | every interactive shell | ✅ BEST for Docker |
-| `.zprofile` | login shell only        | optional          |
-| `.zshenv`   | always (even scripts)   | ⚠️ avoid for this |
-
-👉 Best practice:
-✔ Put `DOCKER_HOST` in `.zshrc`
-(balanced and safe)
-
-Some setups suggest environment variables in login configs, but behavior can differ between shells and contexts ([Docker Community Forums][1])
-
----
-
-# 🔍 Alternative (even cleaner)
-
-Instead of env variable, Docker sometimes sets a **context**:
-
+Test:
 ```bash
-docker context use rootless
+docker info  # Should show "rootless"
+docker run hello-world
 ```
 
-👉 This avoids needing `DOCKER_HOST`
+### Limitations
+- Ports <1024 won't work
+- Slightly slower networking
+- Some images may fail
+- Data stored in `~/.local/share/docker` (not `/var/lib/docker`)
 
-⚠️ If both are set:
-
-* `DOCKER_HOST` overrides context ([Docker Community Forums][1])
-
----
-
-# 🧭 My recommendation for YOU
-
-Since you want **safe + simple**:
-
-👉 Do this:
-
-1. Add to `.zshrc`:
-
-   ```bash
-   export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock
-   ```
-
-2. Reload:
-
-   ```bash
-   source ~/.zshrc
-   ```
-
-3. Verify:
-
-   ```bash
-   docker info
-   ```
+### Common Problems
+- `command not found`: Install `docker-ce-rootless-extras`
+- `newuidmap not found`: Install `uidmap`
+- Permission denied: Check `cat /proc/sys/kernel/unprivileged_userns_clone` (if 0, run `sudo sysctl -w kernel.unprivileged_userns_clone=1`)
 
 ---
 
-# 🚀 Bonus (nice with Oh My Zsh)
+## ❓ Docker Desktop on Linux Mint (Cinnamon)?
 
-You can add Docker aliases plugin:
+Short answer: No, installing Docker Desktop will NOT install full GNOME. It only requires `gnome-terminal` (lightweight dependency). However, Docker Desktop runs a VM and uses more resources than plain Docker Engine.
 
-```bash
-plugins=(git docker docker-compose)
-```
-
-👉 Gives shortcuts like:
-
-* `dps` → `docker ps`
-* `dcu` → `docker-compose up`
+Recommendation: Skip Docker Desktop. Use Docker Engine + Portainer for a lighter, safer setup.
 
 ---
 
-# ✅ Final answer
+## 🧠 Advice and Next Steps
 
-✔ YES — update `.zshrc`, not `.bashrc`
-✔ That’s the correct equivalent for Oh My Zsh
-✔ Otherwise rootless Docker won’t work properly
+- Docker is not a VM; it shares the kernel, so security depends on your practices.
+- For learning OpenClaw: Start with rootful Docker + safe flags, then consider rootless.
+- Next: Set up OpenClaw safely in Docker with isolated volumes and networking.
 
----
-
-If you want, I can check your `.zshrc` and suggest a **clean, optimized config for Docker + dev work** 👍
-
-[1]: https://forums.docker.com/t/inconsistency-in-rootless-mode-configuration/137972?utm_source=chatgpt.com "Inconsistency in rootless mode configuration - General - Docker Community Forums"
-
-
-
----
-
-## Dirty here
-
-I want o install docker and docker desktop on linux mint. here is instruction for ubuntu: https://docs.docker.com/desktop/setup/install/linux/ubuntu/
-will it install full gnome? I don't need since I'm using cinnamon
-
-Short answer: No — installing Docker Desktop will NOT install full GNOME on Linux Mint (Cinnamon).
-But there are a couple of small GNOME-related dependencies you should understand.
-🧩 What actually happens on Linux Mint (Cinnamon)
-
-From Docker’s official docs:
-
-    Docker Desktop supports GNOME, KDE, MATE (and others may work)
-
-    If you’re not using GNOME, you only need to install:
-
-    sudo apt install gnome-terminal
-
-👉 That’s it — just the terminal app, not the whole GNOME desktop.
-🧠 Important clarification (this is where people get confused)
-❌ It does NOT:
-
-    Install GNOME desktop environment
-
-    Replace Cinnamon
-
-    Pull in heavy GNOME session packages
-
-✅ It DOES:
-
-    Install gnome-terminal only (lightweight dependency)
-
-    Install Docker Desktop itself (GUI app + VM backend)
-
-⚠️ Bigger thing you should care about (more important than GNOME)
-
-Docker Desktop on Linux:
-
-    Runs a VM using KVM/QEMU
-
-    Uses more RAM/CPU than plain Docker
-
-    Is not necessary on Linux
-
-💡 My honest recommendation (based on your use case)
-
-Since you said:
-
-    "DO NOT TOUCH MY DATA OR BREAK CURRENT SYSTEM"
-
-Then:
-🟢 Best option (safe, minimal, standard)
-
-Install Docker Engine only:
-
-sudo apt install docker.io
-
-or official repo version.
-
-✔ No GUI
-✔ No VM
-✔ Minimal dependencies
-✔ Works perfectly for OpenClaw / agents / APIs
-🟡 If you REALLY want GUI
-
-Instead of Docker Desktop, use:
-
-    Portainer (recommended)
-
-        Runs in Docker itself
-
-        No VM
-
-        Lightweight web UI
-
-🔴 When Docker Desktop makes sense
-
-Only if you need:
-
-    Extensions marketplace
-
-    Same workflow as Windows/Mac
-
-    Built-in GUI tooling
-
-Otherwise → overkill on Linux.
-🧾 Final answer
-
-👉 Installing Docker Desktop on Linux Mint:
-
-    Will NOT install GNOME desktop
-
-    Will only install gnome-terminal as dependency
-
-    Will add a VM layer (bigger impact than any GNOME package)
-
-If you want, I can give you a safe step-by-step install for Linux Mint (Cinnamon) with:
-
-    Docker Engine (recommended)
-
-    Optional Portainer GUI
-
-    Zero system breakage 👍
+References:
+- [Docker Engine Security](https://docs.docker.com/engine/security/)
+- [Rootless Mode](https://docs.docker.com/engine/security/rootless/)
+- [Ubuntu Installation](https://docs.docker.com/desktop/setup/install/linux/ubuntu/)
 
 
 yes
